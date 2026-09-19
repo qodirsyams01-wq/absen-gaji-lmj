@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📷 Absen & Gaji — LMJ Interior</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <style>
+        body { background: linear-gradient(135deg, #0f172a, #1e293b); min-height: 100vh; color: white; }
+        .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); }
+        .btn-primary { background: linear-gradient(135deg, #10b981, #059669); font-weight: bold; border-radius: 10px; padding: 12px; }
+        .btn-scan { background: linear-gradient(135deg, #8b5cf6, #6366f1); font-weight: bold; border-radius: 10px; padding: 12px; }
+        .btn-sync { background: linear-gradient(135deg, #4285f4, #34a853); font-weight: bold; border-radius: 10px; padding: 10px; }
+        input, select { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; width: 100%; margin: 6px 0; color: white; }
+        input:focus { border-color: #10b981; outline: none; }
+        .tab-btn { padding: 10px 14px; border-radius: 10px; border: none; background: rgba(255,255,255,0.05); color: #94a3b8; font-weight: 600; }
+        .tab-btn.aktif { background: #10b981; color: white; }
+        .hidden { display: none !important; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 999; display: none; }
+        .modal-buka { display: flex; }
+        .scan-kotak { width: 100%; max-width: 400px; aspect-ratio: 4/3; background: #000; border-radius: 12px; overflow: hidden; }
+        .scan-kotak video { width: 100%; height: 100%; object-fit: cover; }
+        .barcode-container { background: white; padding: 10px; border-radius: 8px; display: inline-block; margin: 8px 0; }
+        .gajian-notif { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #000; padding: 10px; border-radius: 8px; font-weight: bold; text-align: center; margin-bottom: 15px; }
+        .sukses { color: #4ade80; }
+        .info-kartu { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+    </style>
+</head>
+<body class="p-4 max-w-5xl mx-auto">
+
+<header class="text-center mb-6">
+    <h1 class="text-2xl font-bold text-green-400">💰 ABSEN & GAJI TUKANG — LMJ Interior</h1>
+    <p class="text-gray-400 text-sm mt-1">Scan Barcode → Absen Masuk → Hitung Gaji → Tersimpan ke Google Sheets</p>
+    <div class="mt-3 flex justify-center gap-2 flex-wrap">
+        <button onclick="bukaKameraScan()" class="btn-scan px-4 py-2 text-sm">📷 SCAN MASUK</button>
+        <button onclick="bukaTab('setelan')" class="btn-sync px-4 py-2 text-sm">⚙️ Hubungkan Sheet</button>
+    </div>
+    <p id="statusSinkron" class="text-xs mt-2 text-yellow-400">⚠️ Belum terhubung ke Google Sheets</p>
+</header>
+
+<div id="notifGajian" class="gajian-notif hidden">📅 HARI INI HARI SABTU — HARI GAJIAN! 💰</div>
+
+<div class="flex gap-2 mb-6 overflow-x-auto flex-wrap">
+    <button class="tab-btn aktif" onclick="bukaTab('scan')">📷 Scan</button>
+    <button class="tab-btn" onclick="bukaTab('karyawan')">👤 Tukang</button>
+    <button class="tab-btn" onclick="bukaTab('absen')">🕓 Rekap Absen</button>
+    <button class="tab-btn" onclick="bukaTab('laporan')">📊 Laporan Gaji</button>
+    <button class="tab-btn" onclick="bukaTab('setelan')">⚙️ Setelan</button>
+</div>
+
+<!-- TAB SCAN -->
+<div id="tab-scan" class="">
+<div class="glass p-5 mb-6 text-center">
+    <h2 class="text-lg font-bold mb-4">📷 Scan Barcode Masuk Kerja</h2>
+    <button onclick="bukaKameraScan()" class="btn-scan w-full py-4 text-xl mb-4">🔍 Buka Kamera & Scan</button>
+    
+    <div class="mb-4">
+        <label class="text-sm font-semibold">Pilih Proyek Lokasi Kerja</label>
+        <select id="pilihProyekScan">
+            <option value="utama">Lokasi Utama — LMJ Interior</option>
+        </select>
+    </div>
+
+    <div id="hasilScan" class="mt-4 text-left hidden">
+        <div class="info-kartu">
+            <h3 class="font-bold text-green-400">✅ Berhasil Tersimpan!</h3>
+            <p class="mt-2"><b>Nama:</b> <span id="hnama"></span></p>
+            <p><b>Jam Masuk:</b> <span id="hjam"></span></p>
+            <p><b>Status:</b> <span id="hstatus"></span></p>
+            <p><b>Gaji/Hari:</b> Rp <span id="hgaji"></span></p>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- TAB KARYAWAN -->
+<div id="tab-karyawan" class="hidden">
+<div class="glass p-5 mb-6">
+    <h2 class="text-lg font-bold mb-4">👤 Data Tukang</h2>
+    
+    <div class="bg-black/20 p-4 rounded-lg mb-5">
+        <h3 class="font-bold text-sm mb-3">➕ Tambah Tukang Baru</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div><label class="text-xs font-semibold">Nama Lengkap</label><input type="text" id="namaBaru" placeholder="Nama tukang"></div>
+            <div><label class="text-xs font-semibold">NIK</label><input type="text" id="nikBaru" placeholder="Nomor identitas"></div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+            <div><label class="text-xs font-semibold">Jabatan</label>
+                <select id="jabatanBaru">
+                    <option value="Tukang">Tukang Umum</option>
+                    <option value="Tukang Batu">Tukang Batu</option>
+                    <option value="Tukang Kayu">Tukang Kayu</option>
+                    <option value="Tukang Cat">Tukang Cat</option>
+                    <option value="Mandor">Mandor</option>
+                </select>
+            </div>
+            <div><label class="text-xs font-semibold">Gaji Per Hari (Rp)</label><input type="number" id="gajiBaru" placeholder="Contoh: 60000"></div>
+        </div>
+        <button onclick="simpanTukang()" class="btn-primary w-full mt-3">💾 SIMPAN & BUAT BARCODE</button>
+        <div id="barcodeTukang" class="mt-4 text-center hidden">
+            <p class="text-sm text-gray-300 mb-2">👇 Cetak atau foto barcode ini untuk kartu absen</p>
+            <div class="barcode-container mx-auto"><svg id="bc-hasil"></svg></div>
+            <p id="kodeTukang" class="text-xs text-gray-400 mt-1"></p>
+        </div>
+    </div>
+
+    <h3 class="font-bold text-sm mb-3">📋 Daftar Tukang</h3>
+    <div id="daftarTukang" class="text-sm">
+        <p class="text-gray-400 text-center py-4">Belum ada data tukang</p>
+    </div>
+</div>
+</div>
+
+<!-- TAB ABSEN -->
+<div id="tab-absen" class="hidden">
+<div class="glass p-5 mb-6">
+    <h2 class="text-lg font-bold mb-4">🕓 Rekap Absen</h2>
+    <div class="mb-4">
+        <label class="text-sm font-semibold">Tanggal</label>
+        <input type="date" id="filterTanggal" onchange="tampilAbsen()">
+    </div>
+    <div id="isiAbsen" class="text-sm">
+        <p class="text-gray-400 text-center py-4">Belum ada data absen</p>
+    </div>
+</div>
+</div>
+
+<!-- TAB LAPORAN -->
+<div id="tab-laporan" class="hidden">
+<div class="glass p-5 mb-6">
+    <h2 class="text-lg font-bold mb-4">📊 Laporan Gaji</h2>
+    <div class="flex gap-2 mb-4">
+        <button onclick="laporanMode('harian')" class="tab-btn aktif" id="btn-harian">Harian</button>
+        <button onclick="laporanMode('mingguan')" class="tab-btn" id="btn-mingguan">Mingguan (Sabtu)</button>
+        <button onclick="laporanMode('bulanan')" class="tab-btn" id="btn-bulanan">Bulanan</button>
+    </div>
+    <div id="isiLaporan" class="text-sm"></div>
+    <div class="mt-4 flex gap-2">
+        <button onclick="kirimKeSheet()" class="btn-sync flex-1 py-2">☁️ Kirim Semua ke Google Sheets</button>
+        <button onclick="simpanCSV()" class="btn-primary flex-1 py-2">📥 Unduh (.csv)</button>
+    </div>
+</div>
+</div>
+
+<!-- TAB SETELAN -->
+<div id="tab-setelan" class="hidden">
+<div class="glass p-5 mb-6">
+    <h2 class="text-lg font-bold mb-4">⚙️ Hubungkan Google Sheets</h2>
+    <p class="text-sm text-gray-400 mb-4">Tempel URL Web App dari Google Apps Script di bawah ini:</p>
+    <input type="text" id="urlWebApp" placeholder="Contoh: https://script.google.com/macros/s/AKfycb.../exec">
+    <button onclick="simpanUrl()" class="btn-primary w-full mt-2">✅ Simpan & Tes Koneksi</button>
+    <p id="pesanKoneksi" class="mt-3 text-sm"></p>
+    
+    <div class="mt-6 pt-4 border-t border-white/10">
+        <h3 class="font-bold text-sm mb-2">☁️ Cadangan Google Drive</h3>
+        <p class="text-xs text-gray-400 mb-3">Data otomatis tersimpan ke Sheet. Untuk file langsung ke Drive, gunakan fitur "Unduh" lalu unggah manual atau atur otomatisasi via Google Apps Script.</p>
+        <button onclick="unggahKeDrive()" class="btn-sync w-full py-2">📤 Simpan File Cadangan</button>
+    </div>
+</div>
+</div>
+
+<!-- MODAL SCAN -->
+<div id="modalScan" class="modal">
+    <div class="glass p-5 w-full max-w-md mx-4 text-center">
+        <h3 class="text-xl font-bold mb-4">📷 Scan Barcode</h3>
+        <div class="scan-kotak mb-4"><video id="videoScan" playsinline muted autoplay></video></div>
+        <p class="text-sm text-gray-400 mb-4">Arahkan barcode ke kamera</p>
+        <button onclick="tutupScan()" class="bg-red-600 w-full py-2 rounded-lg font-bold">❌ Tutup</button>
+    </div>
+</div>
+
+<script>
+// DATA PENYIMPANAN LOKAL
+let daftarTukang = JSON.parse(localStorage.getItem('lmj_tukang') || '[]');
+let dataAbsen = JSON.parse(localStorage.getItem('lmj_absen') || '[]');
+let urlWebApp = localStorage.getItem('lmj_url_app') || '';
+let kameraAktif = false;
+
+// INISIALISASI
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('filterTanggal').value = new Date().toISOString().split('T')[0];
+    if (urlWebApp) {
+        document.getElementById('urlWebApp').value = urlWebApp;
+        document.getElementById('statusSinkron').textContent = '✅ Terhubung ke Google Sheets';
+        document.getElementById('statusSinkron').className = 'text-xs mt-2 text-green-400';
+    }
+    if (new Date().getDay() === 6) {
+        document.getElementById('notifGajian').classList.remove('hidden');
+    }
+    tampilDaftarTukang();
+    tampilAbsen();
+});
+
+// GANTI TAB
+function bukaTab(nama) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
+    event.target.closest('.tab-btn')?.classList.add('aktif');
+    ['scan','karyawan','absen','laporan','setelan'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
+    });
+    document.getElementById(`tab-${nama}`).classList.remove('hidden');
+    
+    if (nama === 'karyawan') tampilDaftarTukang();
+    if (nama === 'absen') tampilAbsen();
+    if (nama === 'laporan') laporanMode('harian');
+}
+
+// SIMPAN URL WEB APP
+function simpanUrl() {
+    urlWebApp = document.getElementById('urlWebApp').value.trim();
+    if (!urlWebApp) {
+        alert('⚠️ Tempel URL Web App dari Google Apps Script!');
+        return;
+    }
+    localStorage.setItem('lmj_url_app', urlWebApp);
+    document.getElementById('statusSinkron').textContent = '✅ Terhubung ke Google Sheets';
+    document.getElementById('statusSinkron').className = 'text-xs mt-2 text-green-400';
+    document.getElementById('pesanKoneksi').innerHTML = '<span class="sukses">✅ URL tersimpan! Data akan langsung dikirim ke Google Sheets saat absen.</span>';
+}
+
+// KIRIM DATA KE GOOGLE SHEETS
+async function kirimKeSheet(data) {
+    if (!urlWebApp) {
+        alert('⚠️ Masukkan URL Web App dulu di tab Setelan!');
+        return false;
+    }
+    try {
+        const res = await fetch(urlWebApp, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const hasil = await res.json();
+        return hasil.hasil === 'berhasil';
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
+}
+
+// TAMBAH TUKANG
+function simpanTukang() {
+    const nama = document.getElementById('namaBaru').value.trim();
+    const nik = document.getElementById('nikBaru').value.trim();
+    const jabatan = document.getElementById('jabatanBaru').value;
+    const gaji = parseInt(document.getElementById('gajiBaru').value) || 0;
+
+    if (!nama || !nik || gaji === 0) {
+        alert('⚠️ Semua kolom wajib diisi!');
+        return;
+    }
+    if (daftarTukang.find(t => t.nik === nik)) {
+        alert('⚠️ NIK sudah terdaftar!');
+        return;
+    }
+
+    const kodeBarcode = `LMJ-${nik}-${Date.now().toString().slice(-6)}`;
+    const baru = {
+        id: Date.now(), nama, nik, jabatan, gajiPerHari: gaji,
+        kodeBarcode, tanggalDaftar: new Date().toLocaleDateString('id-ID'),
+        totalHadir: 0, totalPotongan: 0
+    };
+
+    daftarTukang.push(baru);
+    localStorage.setItem('lmj_tukang', JSON.stringify(daftarTukang));
+    
+    // Kirim ke Sheet
+    kirimKeSheet({
+        aksi: 'simpan_karyawan',
+        id: baru.id, nama, nik, jabatan, kodeBarcode, gajiPerHari: gaji,
+        tanggalDaftar: baru.tanggalDaftar
+    });
+
+    // Tampilkan Barcode
+    document.getElementById('barcodeTukang').classList.remove('hidden');
+    document.getElementById('kodeTukang').textContent = kodeBarcode;
+    setTimeout(() => {
+        JsBarcode('#bc-hasil', kodeBarcode, {format:"CODE128", width:2, height:60, displayValue:true});
+    }, 100);
+
+    alert(`✅ Tersimpan!\nNama: ${nama}\nGaji/Hari: Rp ${gaji.toLocaleString('id-ID')}`);
+    
+    document.getElementById('namaBaru').value = '';
+    document.getElementById('nikBaru').value = '';
+    document.getElementById('gajiBaru').value = '';
+    tampilDaftarTukang();
+}
+
+function tampilDaftarTukang() {
+    const el = document.getElementById('daftarTukang');
+    if (daftarTukang.length === 0) {
+        el.innerHTML = '<p class="text-gray-400 text-center py-4">Belum ada data tukang</p>';
+        return;
+    }
+    el.innerHTML = daftarTukang.map(t => `
+        <div class="info-kartu flex justify-between items-center">
+            <div>
+                <b>${t.nama}</b> — ${t.jabatan}<br>
+                <span class="text-xs text-gray-400">Rp ${t.gajiPerHari.toLocaleString('id-ID')}/hari • Hadir: ${t.totalHadir} hari</span>
+            </div>
+            <div class="text-right">
+                <button onclick="hapusTukang(${t.id})" class="text-red-400 text-xs">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function hapusTukang(id) {
+    if (!confirm('Hapus data tukang ini?')) return;
+    daftarTukang = daftarTukang.filter(t => t.id !== id);
+    localStorage.setItem('lmj_tukang', JSON.stringify(daftarTukang));
+    tampilDaftarTukang();
+}
+
+// SCAN BARCODE
+async function bukaKameraScan() {
+    document.getElementById('modalScan').classList.add('modal-buka');
+    kameraAktif = true;
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: 'environment', width: { ideal: 1280 } } 
+        });
+        const video = document.getElementById('videoScan');
+        video.srcObject = stream;
+        await video.play();
+
+        Quagga.init({
+            inputStream: { type: 'LiveStream', target: video, constraints: { width: 640, height: 480 } },
+            decoder: { readers: ['code_128_reader'] }
+        }, err => {
+            if (err) {
+                const kode = prompt('Masukkan kode barcode secara manual:');
+                if (kode) prosesHasilScan(kode);
+                return;
+            }
+            Quagga.start();
+            Quagga.onDetected(data => {
+                Quagga.stop();
+                tutupScan();
+                prosesHasilScan(data.codeResult.code);
+            });
+        });
+    } catch (err) {
+        const kode = prompt('Tidak bisa akses kamera.\nMasukkan kode barcode:');
+        if (kode) prosesHasilScan(kode);
+    }
+}
+
+function tutupScan() {
+    kameraAktif = false;
+    const video = document.getElementById('videoScan');
+    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    try { Quagga.stop(); } catch(e) {}
+    document.getElementById('modalScan').classList.remove('modal-buka');
+}
+
+async function prosesHasilScan(kodeBarcode) {
+    const tukang = daftarTukang.find(t => t.kodeBarcode === kodeBarcode);
+    if (!tukang) {
+        alert('❌ Barcode tidak terdaftar!');
+        return;
+    }
+
+    const sekarang = new Date();
+    const tanggal = sekarang.toISOString().split('T')[0];
+    const jam = sekarang.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    const jamMasuk = sekarang.getHours();
+    const status = jamMasuk > 8 ? 'Terlambat' : 'Hadir';
+    const potongan = status === 'Terlambat' ? 5000 : 0;
+
+    // Cek sudah absen hari ini?
+    const sudah = dataAbsen.find(a => a.tanggal === tanggal && a.kodeBarcode === kodeBarcode);
+    if (sudah) {
+        alert(`⚠️ ${tukang.nama} sudah absen hari ini!\nJam Masuk: ${sudah.jamMasuk}`);
+        return;
+    }
+
+    // Simpan absen
+    const absenBaru = {
+        id: Date.now(),
+        kodeBarcode,
+        idTukang: tukang.id,
+        nama: tukang.nama,
+        tanggal,
+        jamMasuk: jam,
+        status,
+        potongan,
+        gajiPerHari: tukang.gajiPerHari,
+        proyek: document.getElementById('pilihProyekScan').value,
+        waktu: sekarang.toLocaleString('id-ID')
+    };
+
+    dataAbsen.unshift(absenBaru);
+    localStorage.setItem('lmj_absen', JSON.stringify(dataAbsen));
+
+    // Update total hadir tukang
+    tukang.totalHadir++;
+    tukang.totalPotongan += potongan;
+    localStorage.setItem('lmj_tukang', JSON.stringify(daftarTukang));
+
+    // Kirim ke Google Sheets
+    await kirimKeSheet({
+        aksi: 'simpan_absen',
+        timestamp: absenBaru.waktu,
+        idKaryawan: tukang.id,
+        nama: tukang.nama,
+        tanggal,
+        jamMasuk: jam,
+        status,
+        potongan,
+        idProyek: absenBaru.proyek,
+        namaProyek: document.getElementById('pilihProyekScan').selectedOptions[0].text
+    });
+
+    // Tampilkan hasil
+    document.getElementById('hasilScan').classList.remove('hidden');
+    document.getElementById('hnama').textContent = tukang.nama;
+    document.getElementById('hjam').textContent = jam;
+    document.getElementById('hstatus').textContent = status + (potongan ? ` (Potong Rp ${potongan.toLocaleString('id-ID')})` : '');
+    document.getElementById('hgaji').textContent = tukang.gajiPerHari.toLocaleString('id-ID');
+
+    alert(`✅ Absen Tercatat!\nNama: ${tukang.nama}\nJam: ${jam}\nStatus: ${status}`);
+    tampilAbsen();
+}
+
+// TAMPIL ABSEN
+function tampilAbsen() {
+    const tgl = document.getElementById('filterTanggal').value;
+    const hariIni = dataAbsen.filter(a => a.tanggal === tgl);
+    const el = document.getElementById('isiAbsen');
+    
+    if (hariIni.length === 0) {
+        el.innerHTML = '<p class="text-gray-400 text-center py-4">Belum ada absen pada tanggal ini</p>';
+        return;
+    }
+
+    el.innerHTML = hariIni.map(a => `
+        <div class="info-kartu flex justify-between items-center">
+            <div>
+                <b>${a.nama}</b><br>
+                <span class="text-xs ${a.status === 'Hadir' ? 'text-green-400' : 'text-yellow-400'}">
+                    ${a.status} • ${a.jamMasuk}
+                </span>
+            </div>
+            <div class="text-right">
+                <span class="text-sm">Rp ${(a.gajiPerHari - a.potongan).toLocaleString('id-ID')}</span><br>
+                <span class="text-xs text-gray-400">Potong: Rp ${a.potongan.toLocaleString('id-ID')}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+// LAPORAN GAJI
+let modeLaporan = 'harian';
+function laporanMode(mode) {
+    modeLaporan = mode;
+    ['harian','mingguan','bulanan'].forEach(m => {
+        document.getElementById(`btn-${m}`).classList.remove('aktif');
+    });
+    document.getElementById(`btn-${mode}`).classList.add('aktif');
+    hitungLaporan();
+}
+
+function hitungLaporan() {
+    let filter = dataAbsen;
+    let judul = '';
+
+    if (modeLaporan === 'harian') {
+        const tgl = new Date().toISOString().split('T')[0];
+        filter = dataAbsen.filter(a => a.tanggal === tgl);
+        judul = 'Hari Ini (' + new Date().toLocaleDateString('id-ID') + ')';
+    } else if (modeLaporan === 'mingguan') {
+        const hari = new Date().getDay();
+        const mulai = new Date(); mulai.setDate(mulai.getDate() - hari);
+        const akhir = new Date(); akhir.setDate(akhir.getDate() + (6 - hari));
+        filter = dataAbsen.filter(a => {
+            const d = new Date(a.tanggal);
+            return d >= mulai && d <= akhir;
+        });
+        judul = 'Minggu Ini — Gajian Hari Sabtu';
+    } else {
+        const bln = new Date().getMonth();
+        const thn = new Date().getFullYear();
+        filter = dataAbsen.filter(a => {
+            const d = new Date(a.tanggal);
+            return d.getMonth() === bln && d.getFullYear() === thn;
+        });
+        judul = new Date().toLocaleString('id-ID', {month:'long', year:'numeric'});
+    }
+
+    // Rekap per tukang
+    const rekap = {};
+    filter.forEach(a => {
+        if (!rekap[a.kodeBarcode]) {
+            rekap[a.kodeBarcode] = {nama:a.nama, hadir:0, potongan:0, gajiPerHari:a.gajiPerHari};
+        }
+        if (a.status !== 'Tidak Hadir') rekap[a.kodeBarcode].hadir++;
+        rekap[a.kodeBarcode].potongan += a.potongan;
+    });
+
+    let totalSemua = 0;
+    const isi = Object.values(rekap).map(r => {
+        const total = r.hadir * r.gajiPerHari - r.potongan;
+        totalSemua += total;
+        return `
+        <div class="flex justify-between py-2 border-b border-white/10">
+            <span><b>${r.nama}</b> — ${r.hadir} hari hadir</span>
+            <span class="font-bold">Rp ${total.toLocaleString('id-ID')}</span>
+        </div>`;
+    }).join('');
+
+    document.getElementById('isiLaporan').innerHTML = `
+        <h3 class="font-bold text-lg mb-3">📊 ${judul}</h3>
+        ${isi || '<p class="text-gray-400">Belum ada data</p>'}
+        <div class="mt-4 pt-3 border-t border-white/20 text-xl font-bold text-green-400">
+            💰 TOTAL: Rp ${totalSemua.toLocaleString('id-ID')}
+        </div>
+    `;
+}
+
+// UNDUH CSV
+function simpanCSV() {
+    let teks = "Nama,Tanggal,Jam Masuk,Status,Potongan,Gaji Bersih\n";
+    dataAbsen.forEach(a => {
+        teks += `"${a.nama}","${a.tanggal}","${a.jamMasuk}","${a.status}",${a.potongan},${a.gajiPerHari - a.potongan}\n`;
+    });
+    const blob = new Blob([teks], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Absen_Gaji_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+}
+
+async function kirimKeSheet() {
+    if (!urlWebApp) {
+        alert('⚠️ Masukkan URL Web App dulu di tab Setelan!');
+        return;
+    }
+    let berhasil = 0;
+    for (const a of dataAbsen.slice(-50)) { // Kirim 50 data terakhir
+        await kirimKeSheet({
+            aksi: 'simpan_absen',
+            timestamp: a.waktu,
+            idKaryawan: a.idTukang,
+            nama: a.nama,
+            tanggal: a.tanggal,
+            jamMasuk: a.jamMasuk,
+            status: a.status,
+            potongan: a.potongan,
+            idProyek: a.proyek,
+            namaProyek: ''
+        });
+        berhasil++;
+    }
+    alert(`✅ ${berhasil} data dikirim ke Google Sheets!`);
+}
+
+function unggahKeDrive() {
+    simpanCSV();
+    alert('📂 File sudah diunduh!\nBuka Google Drive → tekan tombol "+" → Unggah file → pilih file yang baru diunduh.');
+}
+</script>
+</body>
+</html>
