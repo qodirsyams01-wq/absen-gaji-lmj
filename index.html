@@ -3,450 +3,486 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ABSEN & GAJI TUKANG — LMJ Interior</title>
+    <title>📟 Barcode & Scan — LMJ Interior</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
     <style>
-        body { background: linear-gradient(135deg, #0f172a, #1e293b); min-height: 100vh; color: white; }
-        .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border-radius: 16px; border: 1px solid rgba(255,255,255,0.12); }
-        .btn-primary { background: linear-gradient(135deg, #10b981, #059669); font-weight: bold; border-radius: 10px; padding: 12px; border: none; cursor: pointer; transition: transform 0.2s; }
-        .btn-primary:hover { transform: translateY(-2px); }
-        .btn-scan { background: linear-gradient(135deg, #8b5cf6, #6366f1); font-weight: bold; border-radius: 10px; padding: 12px; border: none; cursor: pointer; transition: transform 0.2s; }
-        .btn-scan:hover { transform: translateY(-2px); }
-        .btn-lokasi { background: linear-gradient(135deg, #f59e0b, #d97706); font-weight: bold; border-radius: 10px; padding: 10px; border: none; cursor: pointer; transition: transform 0.2s; }
-        .btn-lokasi:hover { transform: translateY(-2px); }
-        .btn-sync { background: linear-gradient(135deg, #4285f4, #34a853); font-weight: bold; border-radius: 10px; padding: 10px; border: none; cursor: pointer; transition: transform 0.2s; }
-        .btn-sync:hover { transform: translateY(-2px); }
-        input, select, textarea { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 10px; width: 100%; margin: 6px 0; color: white; }
-        input:focus, select:focus, textarea:focus { border-color: #10b981; outline: none; }
-        .tab-btn { padding: 10px 14px; border-radius: 10px; border: none; background: rgba(255,255,255,0.05); color: #94a3b8; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        body { background: linear-gradient(135deg, #0f172a, #1e293b); min-height: 100vh; color: white; font-family: 'Segoe UI', sans-serif; padding: 16px; }
+        .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.12); border-radius: 16px; padding: 20px; margin-bottom: 20px; }
+        .btn-primary { background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; padding: 12px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn-primary:hover { transform: scale(1.02); }
+        .btn-scan { background: linear-gradient(135deg, #8b5cf6, #6366f1); }
+        .btn-sheet { background: linear-gradient(135deg, #4285f4, #34a853); }
+        input, select { background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.15); color: white; border-radius: 8px; padding: 12px; width: 100%; margin: 8px 0; font-size: 15px; }
+        input:focus { border-color: #10b981; outline: none; }
+        .barcode-box { background: white; padding: 20px; border-radius: 12px; margin: 15px 0; text-align: center; }
+        .tab-btn { padding: 12px 20px; border-radius: 10px; border: none; background: rgba(255,255,255,0.05); color: #94a3b8; cursor: pointer; font-weight: 600; flex: 1; }
         .tab-btn.aktif { background: #10b981; color: white; }
+        .scan-box { width: 100%; aspect-ratio: 4/3; background: #000; border-radius: 12px; overflow: hidden; margin: 15px 0; }
+        .scan-box video { width: 100%; height: 100%; object-fit: cover; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); text-align: left; font-size: 14px; }
+        th { background: rgba(16,185,129,0.2); }
         .hidden { display: none !important; }
-        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 999; }
-        .modal-buka { display: flex !important; }
-        .scan-kotak { width: 100%; max-width: 400px; aspect-ratio: 4/3; background: #000; border-radius: 12px; overflow: hidden; position: relative; }
-        .scan-kotak video { width: 100%; height: 100%; object-fit: cover; }
-        .barcode-container { background: white; padding: 15px; border-radius: 8px; display: inline-block; margin: 10px 0; }
-        .info-kartu { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
-        .lokasi-kartu { border-left: 4px solid #f59e0b; }
-        .lokasi-aktif { border-color: #10b981; background: rgba(16, 185, 129, 0.1); }
-        .lokasi-nonaktif { opacity: 0.6; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-        th, td { border-bottom: 1px solid rgba(255,255,255,0.1); padding: 8px 6px; text-align: left; }
-        th { background: rgba(255,255,255,0.05); color: #4ade80; }
-        .status-tepat { color: #4ade80; }
-        .status-terlambat { color: #fbbf24; }
+        .notif { padding: 12px; border-radius: 8px; margin: 10px 0; text-align: center; font-weight: bold; }
+        .notif.success { background: rgba(16,185,129,0.2); color: #4ade80; }
+        .notif.error { background: rgba(239,68,68,0.2); color: #f87171; }
+        .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 999; padding: 20px; }
+        .btn-hapus { background: #ef4444; padding: 6px 10px; border-radius: 6px; border: none; color: white; font-size: 12px; }
+        .btn-tutup { background: #dc2626; color: white; padding: 10px; border-radius: 8px; border: none; width: 100%; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
-<body class="p-4 max-w-5xl mx-auto">
+<body class="max-w-md mx-auto">
 
 <header class="text-center mb-6">
-    <h1 class="text-2xl font-bold text-green-400">💰 ABSEN & GAJI TUKANG — LMJ Interior</h1>
-    <p class="text-gray-400 text-sm mt-1">Scan Barcode • Multi Proyek • Laporan Otomatis</p>
-    <div class="mt-3 flex justify-center gap-2 flex-wrap">
-        <button onclick="bukaKameraScan()" class="btn-scan px-4 py-2 text-sm">📷 SCAN BARCODE</button>
-        <button onclick="bukaTab('lokasi')" class="btn-lokasi px-4 py-2 text-sm">📍 LOKASI PROYEK</button>
-        <button onclick="bukaTab('setelan')" class="btn-sync px-4 py-2 text-sm">⚙️ HUBUNGKAN SHEET</button>
-    </div>
-    <p id="statusSinkron" class="text-xs mt-2 text-yellow-400">⚠️ Belum terhubung ke Google Sheets</p>
+    <h1 class="text-2xl font-bold text-green-400">📟 BARCODE & SCAN — LMJ Interior</h1>
+    <p class="text-gray-400 text-sm mt-1">Buat Barcode • Scan • Simpan Data</p>
+    <p id="statusKoneksi" class="text-xs mt-2 text-yellow-400">⚠️ Belum terhubung ke Google Sheets</p>
 </header>
 
-<div class="flex gap-2 mb-6 overflow-x-auto flex-wrap">
-    <button class="tab-btn aktif" onclick="bukaTab('scan')">📷 Scan</button>
-    <button class="tab-btn" onclick="bukaTab('karyawan')">👤 Tukang</button>
-    <button class="tab-btn" onclick="bukaTab('absen')">🕓 Rekap Absen</button>
-    <button class="tab-btn" onclick="bukaTab('laporan')">📊 Laporan</button>
-    <button class="tab-btn" onclick="bukaTab('lokasi')">📍 Lokasi</button>
-    <button class="tab-btn" onclick="bukaTab('setelan')">⚙️ Setelan</button>
+<!-- TAB NAVIGASI -->
+<div class="flex gap-2 mb-6">
+    <button class="tab-btn aktif" onclick="bukaTab('buat')">➕ Buat</button>
+    <button class="tab-btn" onclick="bukaTab('scan')">📷 Scan</button>
+    <button class="tab-btn" onclick="bukaTab('daftar')">📋 Data</button>
+    <button class="tab-btn" onclick="bukaTab('setelan')">⚙️</button>
 </div>
 
-<!-- ========== TAB SCAN ========== -->
-<div id="tab-scan">
-<div class="glass p-5 mb-6 text-center">
-    <h2 class="text-lg font-bold mb-4">📷 Scan & Absen Masuk Kerja</h2>
-    <div class="mb-4">
-        <label class="text-sm font-semibold">📍 Pilih Lokasi Proyek *WAJIB</label>
-        <select id="pilihProyekScan" onchange="simpanLokasiAktif()">
-            <option value="">-- Pilih Lokasi --</option>
-        </select>
-    </div>
-    <button onclick="bukaKameraScan()" class="btn-scan w-full py-4 text-xl mb-4">🔍 Buka Kamera & Scan</button>
-    <button onclick="inputManualKode()" class="bg-gray-700 w-full py-2 rounded-lg mb-4">✏️ Masukkan Kode Secara Manual</button>
-    <div id="hasilScan" class="mt-4 text-left hidden">
-        <div class="info-kartu">
-            <h3 class="font-bold text-green-400">✅ Berhasil Tersimpan!</h3>
-            <p class="mt-2"><b>Nama:</b> <span id="hnama"></span></p>
-            <p><b>Kode Barcode:</b> <span id="hbarcode"></span></p>
-            <p><b>Lokasi:</b> <span id="hlokasi"></span></p>
-            <p><b>Tanggal:</b> <span id="htanggal"></span></p>
-            <p><b>Jam Masuk:</b> <span id="hjam"></span></p>
-            <p><b>Status:</b> <span id="hstatus"></span></p>
-            <p><b>Gaji Bersih:</b> Rp <span id="hgaji"></span></p>
+<!-- ===================================== -->
+<!-- TAB 1: BUAT BARCODE                  -->
+<!-- ===================================== -->
+<div id="tab-buat" class="glass">
+    <h2 class="text-lg font-bold mb-4">➕ Buat Barcode Tukang</h2>
+    
+    <label class="text-sm font-semibold">Kode Barcode</label>
+    <input type="text" id="kodeBarcode" placeholder="Contoh: LMJ-001">
+    <button onclick="generateKodeOtomatis()" class="btn-primary mb-3 text-sm py-2">🔄 Buat Kode Otomatis</button>
+    
+    <label class="text-sm font-semibold">Nama Lengkap Tukang *</label>
+    <input type="text" id="namaTukang" placeholder="Nama Lengkap">
+    
+    <label class="text-sm font-semibold">Jabatan</label>
+    <select id="jabatanTukang">
+        <option value="Tukang Umum">Tukang Umum</option>
+        <option value="Tukang Batu">Tukang Batu</option>
+        <option value="Tukang Kayu">Tukang Kayu</option>
+        <option value="Tukang Cat">Tukang Cat</option>
+        <option value="Mandor">Mandor</option>
+    </select>
+    
+    <label class="text-sm font-semibold">Gaji Per Hari (Rp)</label>
+    <input type="number" id="gajiPerHari" placeholder="Contoh: 60000">
+    
+    <button onclick="simpanDanBuatBarcode()" class="btn-primary mt-4">💾 SIMPAN & BUAT BARCODE</button>
+    
+    <div id="kotakHasilBarcode" class="hidden mt-5">
+        <p class="text-sm text-gray-300 mb-2 text-center">👇 Cetak atau foto barcode ini</p>
+        <div class="barcode-box">
+            <svg id="hasilBarcode"></svg>
         </div>
+        <p id="teksKode" class="text-xs text-gray-400 text-center mt-1"></p>
+        <button onclick="cetakBarcode()" class="btn-sheet mt-3">🖨️ Cetak</button>
     </div>
-</div>
+    
+    <div id="notifBuat" class="notif hidden mt-3"></div>
 </div>
 
-<!-- ========== TAB LOKASI ========== -->
-<div id="tab-lokasi" class="hidden">
-<div class="glass p-5 mb-6">
-    <h2 class="text-lg font-bold mb-4">📍 Manajemen Lokasi Proyek</h2>
-    <div class="bg-black/20 p-4 rounded-lg mb-5">
-        <h3 class="font-bold text-sm mb-3">➕ Tambah Lokasi Baru</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><label class="text-xs font-semibold">Kode Proyek *</label><input type="text" id="kodeLokasiBaru" placeholder="PROJ-A01"></div>
-            <div><label class="text-xs font-semibold">Nama Proyek *</label><input type="text" id="namaLokasiBaru" placeholder="Renovasi Kantor"></div>
+<!-- ===================================== -->
+<!-- TAB 2: SCAN                          -->
+<!-- ===================================== -->
+<div id="tab-scan" class="glass hidden">
+    <h2 class="text-lg font-bold mb-4">📷 Scan Barcode Absen</h2>
+    
+    <button onclick="bukaKamera()" class="btn-scan text-white py-3 text-lg">🔍 Buka Kamera & Scan</button>
+    
+    <div id="kotakHasilScan" class="hidden mt-5">
+        <div class="p-4 bg-green-900/30 rounded-lg">
+            <h3 class="font-bold text-green-400 mb-3">✅ Absen Tercatat!</h3>
+            <p><b>Nama:</b> <span id="scanNama"></span></p>
+            <p><b>Jabatan:</b> <span id="scanJabatan"></span></p>
+            <p><b>Jam Masuk:</b> <span id="scanJam"></span></p>
+            <p><b>Status:</b> <span id="scanStatus"></span></p>
         </div>
-        <div class="mt-3">
-            <label class="text-xs font-semibold">Alamat Lengkap</label>
-            <textarea id="alamatLokasiBaru" rows="2" placeholder="Alamat lengkap"></textarea>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3">
-            <div><label class="text-xs font-semibold">Koordinat/Catatan</label><input type="text" id="koordinatLokasiBaru" placeholder="Opsional"></div>
-            <div>
-                <label class="text-xs font-semibold">Status</label>
-                <select id="statusLokasiBaru">
-                    <option value="aktif" selected>✅ Aktif</option>
-                    <option value="selesai">✅ Selesai</option>
-                    <option value="ditutup">❌ Ditutup</option>
-                </select>
-            </div>
-        </div>
-        <button onclick="simpanLokasi()" class="btn-lokasi w-full mt-3">💾 SIMPAN LOKASI</button>
     </div>
-    <h3 class="font-bold text-sm mb-3">📋 Daftar Lokasi Proyek</h3>
-    <div id="daftarLokasi"><p class="text-gray-400 text-center py-4">Belum ada data lokasi</p></div>
-</div>
 </div>
 
-<!-- ========== TAB TUKANG ========== -->
-<div id="tab-karyawan" class="hidden">
-<div class="glass p-5 mb-6">
-    <h2 class="text-lg font-bold mb-4">👤 Data Tukang</h2>
-    <div class="bg-black/20 p-4 rounded-lg mb-5">
-        <h3 class="font-bold text-sm mb-3">➕ Tambah Tukang Baru</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div><label class="text-xs font-semibold">Nama Lengkap *</label><input type="text" id="namaBaru" placeholder="Nama tukang"></div>
-            <div><label class="text-xs font-semibold">NIK *</label><input type="text" id="nikBaru" placeholder="Nomor identitas"></div>
-        </div>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-            <div>
-                <label class="text-xs font-semibold">Jabatan</label>
-                <select id="jabatanBaru">
-                    <option value="Tukang">Tukang Umum</option>
-                    <option value="Tukang Batu">Tukang Batu</option>
-                    <option value="Tukang Kayu">Tukang Kayu</option>
-                    <option value="Tukang Cat">Tukang Cat</option>
-                    <option value="Mandor">Mandor</option>
-                </select>
-            </div>
-            <div><label class="text-xs font-semibold">Gaji Per Hari (Rp) *</label><input type="number" id="gajiBaru" placeholder="Contoh: 80000"></div>
-        </div>
-        <button onclick="simpanTukang()" class="btn-primary w-full mt-3">💾 SIMPAN & BUAT BARCODE</button>
-        <div id="barcodeTukang" class="mt-4 text-center hidden">
-            <p class="text-sm text-gray-300 mb-2">👇 Cetak atau foto barcode ini untuk kartu absen</p>
-            <div class="barcode-container mx-auto"><svg id="bc-hasil"></svg></div>
-            <p id="kodeTukang" class="text-xs text-gray-400 mt-1 font-mono"></p>
-        </div>
+<!-- ===================================== -->
+<!-- TAB 3: DAFTAR DATA                   -->
+<!-- ===================================== -->
+<div id="tab-daftar" class="glass hidden">
+    <h2 class="text-lg font-bold mb-4">📋 Daftar Tukang & Absen</h2>
+    
+    <div class="flex gap-2 mb-4">
+        <button class="tab-btn aktif" id="btnDaftarTukang" onclick="tampilDaftar('tukang')">👤 Tukang</button>
+        <button class="tab-btn" id="btnDaftarAbsen" onclick="tampilDaftar('absen')">🕓 Riwayat Absen</button>
     </div>
-    <h3 class="font-bold text-sm mb-3">📋 Daftar Tukang</h3>
-    <div id="daftarTukang" class="text-sm"><p class="text-gray-400 text-center py-4">Belum ada data tukang</p></div>
-</div>
+    
+    <div id="isiDaftarTukang">
+        <p class="text-gray-400 text-center py-4">Belum ada data tukang</p>
+    </div>
+    
+    <div id="isiDaftarAbsen" class="hidden">
+        <p class="text-gray-400 text-center py-4">Belum ada riwayat absen</p>
+    </div>
+    
+    <div class="flex gap-2 mt-5">
+        <button onclick="unduhCSV()" class="btn-primary flex-1">📥 Unduh CSV</button>
+        <button onclick="kirimSemuaKeSheet()" class="btn-sheet flex-1 text-white">☁️ Kirim ke Sheet</button>
+    </div>
 </div>
 
-<!-- ========== TAB REKAP ABSEN ========== -->
-<div id="tab-absen" class="hidden">
-<div class="glass p-5 mb-6">
-    <h2 class="text-lg font-bold mb-4">🕓 Rekap Absen</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-        <div>
-            <label class="text-sm font-semibold">📍 Lokasi</label>
-            <select id="filterLokasiAbsen" onchange="tampilAbsen()">
-                <option value="semua">-- Semua Lokasi --</option>
-            </select>
-        </div>
-        <div>
-            <label class="text-sm font-semibold">Tanggal</label>
-            <input type="date" id="filterTanggal" onchange="tampilAbsen()">
-        </div>
-    </div>
-    <div id="isiAbsen" class="text-sm overflow-x-auto"><p class="text-gray-400 text-center py-4">Belum ada data absen</p></div>
-</div>
-</div>
-
-<!-- ========== TAB LAPORAN ========== -->
-<div id="tab-laporan" class="hidden">
-<div class="glass p-5 mb-6">
-    <h2 class="text-lg font-bold mb-4">📊 Laporan Lengkap</h2>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
-        <div>
-            <label class="text-sm font-semibold">📍 Lokasi Proyek</label>
-            <select id="filterLokasiLaporan" onchange="hitungLaporan()">
-                <option value="semua">-- Semua Lokasi --</option>
-            </select>
-        </div>
-        <div>
-            <label class="text-sm font-semibold">Periode</label>
-            <select id="filterPeriode" onchange="hitungLaporan()">
-                <option value="harian">Harian</option>
-                <option value="mingguan">Mingguan</option>
-                <option value="bulanan">Bulanan</option>
-            </select>
-        </div>
-    </div>
-    <div id="isiLaporan" class="text-sm"></div>
-    <div class="mt-4 flex gap-2 flex-wrap">
-        <button onclick="kirimSemuaKeSheet()" class="btn-sync flex-1 py-2">☁️ Kirim Semua ke Google Sheets</button>
-        <button onclick="simpanCSV()" class="btn-primary flex-1 py-2">📥 Unduh (.csv)</button>
-    </div>
-</div>
-</div>
-
-<!-- ========== TAB SETELAN ========== -->
-<div id="tab-setelan" class="hidden">
-<div class="glass p-5 mb-6">
+<!-- ===================================== -->
+<!-- TAB 4: SETELAN                       -->
+<!-- ===================================== -->
+<div id="tab-setelan" class="glass hidden">
     <h2 class="text-lg font-bold mb-4">⚙️ Hubungkan Google Sheets</h2>
-    <p class="text-sm text-gray-400 mb-4">Tempel URL Web App dari Google Apps Script di bawah ini:</p>
+    <p class="text-sm text-gray-400 mb-3">Tempel URL Web App dari Google Apps Script:</p>
     <input type="text" id="urlWebApp" placeholder="https://script.google.com/macros/s/.../exec">
-    <button onclick="simpanUrl()" class="btn-primary w-full mt-2">✅ Simpan & Tes Koneksi</button>
+    <button onclick="simpanUrl()" class="btn-primary mt-2">✅ Simpan & Tes Koneksi</button>
     <p id="pesanKoneksi" class="mt-3 text-sm"></p>
-    <div class="mt-6 pt-4 border-t border-white/10">
-        <h3 class="font-bold text-sm mb-2">📋 Struktur Sheet Otomatis Terbentuk</h3>
-        <ul class="text-xs text-gray-400 space-y-2">
-            <li>✅ <b>LOKASI_PROYEK</b> — Kode, Nama, Alamat, Status</li>
-            <li>✅ <b>DAFTAR_TUKANG</b> — Nama, NIK, Jabatan, Gaji/Hari, <b>Kode Barcode</b></li>
-            <li>✅ <b>REKAP_ABSEN</b> — Tanggal, Jam, Nama, Barcode, Proyek, Status, Gaji</li>
-            <li>✅ <b>LAPORAN_RINGKASAN</b> — Harian/Mingguan/Bulanan otomatis</li>
-        </ul>
-    </div>
-</div>
 </div>
 
-<!-- ========== MODAL SCAN ========== -->
-<div id="modalScan" class="modal hidden">
-    <div class="glass p-5 w-full max-w-md mx-4 text-center">
-        <h3 class="text-xl font-bold mb-4">📷 Scan Barcode</h3>
-        <div class="scan-kotak mb-4"><video id="videoScan" playsinline muted autoplay></video></div>
-        <p class="text-sm text-gray-400 mb-4">Arahkan barcode ke kamera</p>
-        <button onclick="tutupScan()" class="bg-red-600 w-full py-2 rounded-lg font-bold">❌ Tutup</button>
+<!-- MODAL KAMERA -->
+<div id="modalKamera" class="modal hidden">
+    <div class="glass w-full max-w-sm">
+        <h3 class="text-xl font-bold mb-4 text-center">📷 Scan Barcode</h3>
+        <div class="scan-box">
+            <video id="videoKamera" playsinline muted autoplay></video>
+        </div>
+        <p class="text-sm text-gray-400 text-center mb-3">Arahkan barcode ke kamera</p>
+        <button onclick="tutupKamera()" class="btn-tutup">❌ Tutup</button>
     </div>
 </div>
 
 <script>
-// === SUARA NOTIFIKASI ===
-function mainkanSuaraBerhasil(){try{const e=new (window.AudioContext||window.webkitAudioContext)(),o=e.createOscillator(),g=e.createGain();o.connect(g);g.connect(e.destination);o.frequency.setValueAtTime(523,e.currentTime);o.frequency.setValueAtTime(659,e.currentTime+.1);o.frequency.setValueAtTime(784,e.currentTime+.2);g.gain.setValueAtTime(.3,e.currentTime);g.gain.exponentialRampToValueAtTime(.001,e.currentTime+.4);o.start(e.currentTime);o.stop(e.currentTime+.4)}catch(e){}}
-function mainkanSuaraGagal(){try{const e=new (window.AudioContext||window.webkitAudioContext)(),o=e.createOscillator(),g=e.createGain();o.type='sawtooth';o.connect(g);g.connect(e.destination);o.frequency.setValueAtTime(200,e.currentTime);o.frequency.setValueAtTime(150,e.currentTime+.25);g.gain.setValueAtTime(.2,e.currentTime);g.gain.exponentialRampToValueAtTime(.001,e.currentTime+.4);o.start(e.currentTime);o.stop(e.currentTime+.4)}catch(e){}}
-
-// === PENYIMPANAN DATA ===
-let daftarLokasi = JSON.parse(localStorage.getItem('lmj_lokasi')||'[]');
-let lokasiAktif = localStorage.getItem('lmj_lokasi_aktif')||'';
-let daftarTukang = JSON.parse(localStorage.getItem('lmj_tukang')||'[]');
-let dataAbsen = JSON.parse(localStorage.getItem('lmj_absen')||'[]');
-let urlWebApp = localStorage.getItem('lmj_url_app')||'';
+// DATA PENYIMPANAN
+let daftarTukang = JSON.parse(localStorage.getItem('lmj_barcode_tukang') || '[]');
+let riwayatAbsen = JSON.parse(localStorage.getItem('lmj_barcode_absen') || '[]');
+let urlWebApp = localStorage.getItem('lmj_url_sheet') || '';
 let kameraAktif = false;
 
-// === INISIALISASI ===
-document.addEventListener('DOMContentLoaded',()=>{
-  muatDaftarLokasiKeSelect();
-  document.getElementById('filterTanggal').value = new Date().toISOString().split('T')[0];
-  if(lokasiAktif) document.getElementById('pilihProyekScan').value = lokasiAktif;
-  if(urlWebApp){
-    document.getElementById('urlWebApp').value = urlWebApp;
-    document.getElementById('statusSinkron').textContent='✅ Terhubung ke Google Sheets';
-    document.getElementById('statusSinkron').className='text-xs mt-2 text-green-400';
-  }
-  tampilDaftarLokasi(); tampilDaftarTukang(); tampilAbsen();
+// INISIALISASI
+document.addEventListener('DOMContentLoaded', () => {
+    if (urlWebApp) {
+        document.getElementById('urlWebApp').value = urlWebApp;
+        document.getElementById('statusKoneksi').textContent = '✅ Terhubung ke Google Sheets';
+        document.getElementById('statusKoneksi').className = 'text-xs mt-2 text-green-400';
+    }
 });
 
-// === FUNGSI LOKASI ===
-function muatDaftarLokasiKeSelect(){
-  const aktif = daftarLokasi.filter(l=>l.status==='aktif');
-  const opsiAktif = aktif.map(l=>`<option value="${l.kode}">${l.nama} — ${l.kode}</option>`).join('');
-  document.getElementById('pilihProyekScan').innerHTML='<option value="">-- Pilih Lokasi --</option>'+opsiAktif;
-  const semua = daftarLokasi.map(l=>`<option value="${l.kode}">${l.nama} — ${l.kode} (${l.status})</option>`).join('');
-  document.getElementById('filterLokasiAbsen').innerHTML='<option value="semua">-- Semua Lokasi --</option>'+semua;
-  document.getElementById('filterLokasiLaporan').innerHTML='<option value="semua">-- Semua Lokasi --</option>'+semua;
-  if(lokasiAktif) document.getElementById('pilihProyekScan').value=lokasiAktif;
-}
-function simpanLokasiAktif(){lokasiAktif=document.getElementById('pilihProyekScan').value;localStorage.setItem('lmj_lokasi_aktif',lokasiAktif);}
-async function simpanLokasi(){
-  const kode=document.getElementById('kodeLokasiBaru').value.trim().toUpperCase();
-  const nama=document.getElementById('namaLokasiBaru').value.trim();
-  const alamat=document.getElementById('alamatLokasiBaru').value.trim();
-  const koordinat=document.getElementById('koordinatLokasiBaru').value.trim();
-  const status=document.getElementById('statusLokasiBaru').value;
-  if(!kode||!nama){alert('⚠️ Kode dan Nama Wajib Diisi!');mainkanSuaraGagal();return;}
-  if(daftarLokasi.find(l=>l.kode===kode)){alert('⚠️ Kode Sudah Ada!');mainkanSuaraGagal();return;}
-  const baru={id:Date.now(),kode,nama,alamat,koordinat,status,dibuat:new Date().toLocaleString('id-ID')};
-  daftarLokasi.push(baru);
-  localStorage.setItem('lmj_lokasi',JSON.stringify(daftarLokasi));
-  await kirimKeSheet({aksi:'simpan_lokasi',kode,nama,alamat,koordinat,status});
-  alert(`✅ Tersimpan:\n${kode} — ${nama}`);mainkanSuaraBerhasil();
-  document.getElementById('kodeLokasiBaru').value='';document.getElementById('namaLokasiBaru').value='';document.getElementById('alamatLokasiBaru').value='';document.getElementById('koordinatLokasiBaru').value='';
-  muatDaftarLokasiKeSelect();tampilDaftarLokasi();
-}
-function tampilDaftarLokasi(){
-  const el=document.getElementById('daftarLokasi');
-  if(!daftarLokasi.length){el.innerHTML='<p class="text-gray-400 text-center py-4">Belum ada data lokasi</p>';return;}
-  el.innerHTML=daftarLokasi.map(l=>`<div class="info-kartu lokasi-kartu ${l.status==='aktif'?'lokasi-aktif':'lokasi-nonaktif'}"><div class="flex justify-between items-start"><div><b>${l.nama}</b> <span class="text-xs bg-white/10 px-2 py-0.5 rounded">${l.kode}</span><br><span class="text-xs text-gray-400">${l.alamat||'Alamat belum diisi'}</span><br><span class="text-xs ${l.status==='aktif'?'text-green-400':l.status==='selesai'?'text-blue-400':'text-red-400'}">${l.status==='aktif'?'✅ Aktif':l.status==='selesai'?'✅ Selesai':'❌ Ditutup'}</span></div><div class="text-right"><button onclick="ubahLokasi(${l.id})" class="text-yellow-400 text-xs mr-1">✏️</button><button onclick="hapusLokasi(${l.id})" class="text-red-400 text-xs">🗑️</button></div></div></div>`).join('');
-}
-function ubahLokasi(id){
-  const l=daftarLokasi.find(x=>x.id===id);if(!l)return;
-  const nm=prompt('Ubah Nama Proyek:',l.nama);if(nm===null)return;
-  const st=prompt('Ubah Status: aktif/selesai/ditutup',l.status);if(st===null)return;
-  l.nama=nm.trim()||l.nama;if(['aktif','selesai','ditutup'].includes(st.trim()))l.status=st.trim();
-  localStorage.setItem('lmj_lokasi',JSON.stringify(daftarLokasi));
-  muatDaftarLokasiKeSelect();tampilDaftarLokasi();mainkanSuaraBerhasil();
-}
-function hapusLokasi(id){if(!confirm('Hapus lokasi ini? Data absen TIDAK ikut terhapus.'))return;daftarLokasi=daftarLokasi.filter(x=>x.id!==id);localStorage.setItem('lmj_lokasi',JSON.stringify(daftarLokasi));muatDaftarLokasiKeSelect();tampilDaftarLokasi();mainkanSuaraBerhasil();}
-
-// === GANTI TAB ===
-function bukaTab(nama){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('aktif'));event.target.closest('.tab-btn')?.classList.add('aktif');
-  ['scan','karyawan','absen','laporan','lokasi','setelan'].forEach(t=>document.getElementById(`tab-${t}`).classList.add('hidden'));
-  document.getElementById(`tab-${nama}`).classList.remove('hidden');
-  if(nama==='lokasi')tampilDaftarLokasi();if(nama==='karyawan')tampilDaftarTukang();if(nama==='absen')tampilAbsen();if(nama==='laporan')hitungLaporan();
-}
-
-// === GOOGLE SHEETS KONEKSI ===
-function simpanUrl(){
-  urlWebApp=document.getElementById('urlWebApp').value.trim();if(!urlWebApp){alert('⚠️ Tempel URL Web App!');return;}
-  localStorage.setItem('lmj_url_app',urlWebApp);
-  document.getElementById('statusSinkron').textContent='✅ Terhubung ke Google Sheets';
-  document.getElementById('statusSinkron').className='text-xs mt-2 text-green-400';
-  document.getElementById('pesanKoneksi').innerHTML='<span class="text-green-400">✅ Tersimpan! Data otomatis dikirim ke Sheet.</span>';
-  mainkanSuaraBerhasil();
-}
-async function kirimKeSheet(data){if(!urlWebApp)return false;try{const r=await fetch(urlWebApp,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});const h=await r.json();return h.hasil==='berhasil';}catch(e){console.error(e);return false;}}
-async function kirimSemuaKeSheet(){
-  if(!urlWebApp){alert('⚠️ Hubungkan Google Sheets dulu di tab Setelan!');return;}
-  let berhasil=0;
-  for(const l of daftarLokasi)await kirimKeSheet({aksi:'simpan_lokasi',kode:l.kode,nama:l.nama,alamat:l.alamat,koordinat:l.koordinat,status:l.status})&&berhasil++;
-  for(const t of daftarTukang)await kirimKeSheet({aksi:'simpan_tukang',nama:t.nama,nik:t.nik,jabatan:t.jabatan,gajiPerHari:t.gajiPerHari,kodeBarcode:t.kodeBarcode,tanggalDaftar:t.tanggalDaftar})&&berhasil++;
-  for(const a of dataAbsen)await kirimKeSheet({aksi:'simpan_absen',nama:a.nama,kodeBarcode:a.kodeBarcode,namaLokasi:a.namaLokasi,kodeLokasi:a.kodeLokasi,tanggal:a.tanggal,jamMasuk:a.jamMasuk,status:a.status,gajiPerHari:a.gajiPerHari,potongan:a.potongan,gajiBersih:a.gajiBersih})&&berhasil++;
-  alert(`✅ Selesai mengirim ${berhasil} catatan ke Google Sheets`);mainkanSuaraBerhasil();
-}
-
-// === TUKANG & BARCODE ===
-function simpanTukang(){
-  const nama=document.getElementById('namaBaru').value.trim();const nik=document.getElementById('nikBaru').value.trim();const jabatan=document.getElementById('jabatanBaru').value;const gaji=parseInt(document.getElementById('gajiBaru').value)||0;
-  if(!nama||!nik||!gaji){alert('⚠️ Semua kolom wajib diisi!');mainkanSuaraGagal();return;}
-  if(daftarTukang.find(t=>t.nik===nik)){alert('⚠️ NIK Sudah Terdaftar!');mainkanSuaraGagal();return;}
-  const kodeBarcode=`LMJ-${nik}-${Date.now().toString().slice(-6)}`;
-  const baru={id:Date.now(),nama,nik,jabatan,gajiPerHari:gaji,kodeBarcode,tanggalDaftar:new Date().toLocaleDateString('id-ID'),hadir:0,potongan:0};
-  daftarTukang.push(baru);localStorage.setItem('lmj_tukang',JSON.stringify(daftarTukang));
-  kirimKeSheet({aksi:'simpan_tukang',nama,nik,jabatan,gajiPerHari:gaji,kodeBarcode,tanggalDaftar:baru.tanggalDaftar});
-  document.getElementById('barcodeTukang').classList.remove('hidden');document.getElementById('kodeTukang').textContent=kodeBarcode;
-  setTimeout(()=>JsBarcode('#bc-hasil',kodeBarcode,{format:'CODE128',width:2,height:60,displayValue:true}),100);
-  alert(`✅ Tersimpan:\n${nama}\nGaji/Hari: Rp ${gaji.toLocaleString('id-ID')}`);mainkanSuaraBerhasil();
-  document.getElementById('namaBaru').value='';document.getElementById('nikBaru').value='';document.getElementById('gajiBaru').value='';
-  tampilDaftarTukang();
-}
-function tampilDaftarTukang(){
-  const el=document.getElementById('daftarTukang');
-  if(!daftarTukang.length){el.innerHTML='<p class="text-gray-400 text-center py-4">Belum ada data tukang</p>';return;}
-  el.innerHTML=daftarTukang.map(t=>`<div class="info-kartu flex justify-between items-center"><div><b>${t.nama}</b> — ${t.jabatan}<br><span class="text-xs text-gray-400">Rp ${t.gajiPerHari.toLocaleString('id-ID')}/hari • Hadir: ${t.hadir||0} hari</span><br><span class="text-xs text-green-400 font-mono">${t.kodeBarcode}</span></div><div class="text-right"><button onclick="hapusTukang(${t.id})" class="text-red-400 text-xs">🗑️</button></div></div>`).join('');
-}
-function hapusTukang(id){if(!confirm('Hapus data tukang ini?'))return;daftarTukang=daftarTukang.filter(t=>t.id!==id);localStorage.setItem('lmj_tukang',JSON.stringify(daftarTukang));tampilDaftarTukang();mainkanSuaraBerhasil();}
-
-// === SCAN BARCODE ===
-async function bukaKameraScan(){
-  const kodeLokasi=document.getElementById('pilihProyekScan').value;if(!kodeLokasi){alert('⚠️ Pilih Lokasi Proyek Dulu!');return;}simpanLokasiAktif();
-  document.getElementById('modalScan').classList.remove('hidden');document.getElementById('modalScan').classList.add('modal-buka');kameraAktif=true;
-  try{
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280}}});
-    const v=document.getElementById('videoScan');v.srcObject=s;await v.play();
-    Quagga.init({inputStream:{type:'LiveStream',target:v,constraints:{width:640,height:480}},decoder:{readers:['code_128_reader']}},err=>{
-      if(err){tutupScan();const k=prompt('Tidak bisa akses kamera. Masukkan kode:');if(k)prosesHasilScan(k);return;}
-      Quagga.start();Quagga.onDetected(d=>{Quagga.stop();tutupScan();prosesHasilScan(d.codeResult.code);});
+// ========== GANTI TAB ==========
+function bukaTab(nama) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('aktif'));
+    event.target.closest('.tab-btn')?.classList.add('aktif');
+    
+    ['buat','scan','daftar','setelan'].forEach(t => {
+        document.getElementById(`tab-${t}`).classList.add('hidden');
     });
-  }catch(err){tutupScan();const k=prompt('Tidak bisa akses kamera. Masukkan kode:');if(k)prosesHasilScan(k);}
-}
-function inputManualKode(){
-  const kodeLokasi=document.getElementById('pilihProyekScan').value;if(!kodeLokasi){alert('⚠️ Pilih Lokasi Proyek Dulu!');return;}
-  const k=prompt('Masukkan Kode Barcode:');if(k)prosesHasilScan(k);
-}
-function tutupScan(){
-  kameraAktif=false;const v=document.getElementById('videoScan');if(v.srcObject)v.srcObject.getTracks().forEach(t=>t.stop());
-  try{Quagga.stop();}catch(e){}
-  document.getElementById('modalScan').classList.remove('modal-buka');document.getElementById('modalScan').classList.add('hidden');
-}
-async function prosesHasilScan(kodeBarcode){
-  const tukang=daftarTukang.find(t=>t.kodeBarcode===kodeBarcode);if(!tukang){alert('❌ Barcode Tidak Terdaftar!');mainkanSuaraGagal();return;}
-  const kodeLokasi=document.getElementById('pilihProyekScan').value;const lokasi=daftarLokasi.find(l=>l.kode===kodeLokasi);if(!lokasi){alert('⚠️ Lokasi Tidak Ditemukan!');return;}
-  const sekarang=new Date();const tanggal=sekarang.toISOString().split('T')[0];const jam=sekarang.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
-  const jamMasuk=sekarang.getHours()*60+sekarang.getMinutes();const batasTepat=7*60+30;
-  const status=jamMasuk<=batasTepat?'Tepat Waktu':'Terlambat';
-  const potongan=status==='Terlambat'?Math.round(tukang.gajiPerHari*0.1):0;
-  const gajiBersih=tukang.gajiPerHari-potongan;
-  const absenBaru={id:Date.now(),nama:tukang.nama,kodeBarcode:tukang.kodeBarcode,namaLokasi:lokasi.nama,kodeLokasi:lokasi.kode,tanggal,jamMasuk:jam,status,gajiPerHari:tukang.gajiPerHari,potongan,gajiBersih,timestamp:sekarang.toLocaleString('id-ID')};
-  dataAbsen.push(absenBaru);localStorage.setItem('lmj_absen',JSON.stringify(dataAbsen));
-  tukang.hadir=(tukang.hadir||0)+1;tukang.potongan=(tukang.potongan||0)+potongan;localStorage.setItem('lmj_tukang',JSON.stringify(daftarTukang));
-  await kirimKeSheet({aksi:'simpan_absen',...absenBaru});
-  mainkanSuaraBerhasil();
-  document.getElementById('hasilScan').classList.remove('hidden');
-  document.getElementById('hnama').textContent=tukang.nama;
-  document.getElementById('hbarcode').textContent=tukang.kodeBarcode;
-  document.getElementById('hlokasi').textContent=lokasi.nama+' — '+lokasi.kode;
-  document.getElementById('htanggal').textContent=tanggal;
-  document.getElementById('hjam').textContent=jam;
-  document.getElementById('hstatus').textContent=status;
-  document.getElementById('hstatus').className=status==='Tepat Waktu'?'status-tepat':'status-terlambat';
-  document.getElementById('hgaji').textContent=gajiBersih.toLocaleString('id-ID');
-  tampilAbsen();
+    document.getElementById(`tab-${nama}`).classList.remove('hidden');
+    
+    if (nama === 'daftar') tampilDaftar('tukang');
 }
 
-// === TAMPILAN ABSEN ===
-function tampilAbsen(){
-  const lokasi=document.getElementById('filterLokasiAbsen').value;const tgl=document.getElementById('filterTanggal').value;
-  let hasil=dataAbsen;
-  if(lokasi!=='semua')hasil=hasil.filter(a=>a.kodeLokasi===lokasi);
-  if(tgl)hasil=hasil.filter(a=>a.tanggal===tgl);
-  const el=document.getElementById('isiAbsen');
-  if(!hasil.length){el.innerHTML='<p class="text-gray-400 text-center py-4">Belum ada data absen</p>';return;}
-  el.innerHTML=`<table><tr><th>Nama</th><th>Barcode</th><th>Lokasi</th><th>Tanggal</th><th>Jam</th><th>Status</th><th>Gaji Bersih</th></tr>`+
-    hasil.map(a=>`<tr><td>${a.nama}</td><td class="text-xs font-mono">${a.kodeBarcode.slice(-12)}</td><td>${a.kodeLokasi}</td><td>${a.tanggal}</td><td>${a.jamMasuk}</td><td class="${a.status==='Tepat Waktu'?'status-tepat':'status-terlambat'}">${a.status}</td><td>Rp ${a.gajiBersih.toLocaleString('id-ID')}</td></tr>`).join('')+`</table>`;
+// ========== BUAT KODE OTOMATIS ==========
+function generateKodeOtomatis() {
+    const nomor = String(daftarTukang.length + 1).padStart(3, '0');
+    document.getElementById('kodeBarcode').value = `LMJ-${nomor}`;
 }
 
-// === LAPORAN ===
-function hitungLaporan(){
-  const lokasi=document.getElementById('filterLokasiLaporan').value;const periode=document.getElementById('filterPeriode').value;
-  let hasil=dataAbsen;if(lokasi!=='semua')hasil=hasil.filter(a=>a.kodeLokasi===lokasi);
-  const sekarang=new Date();
-  if(periode==='harian'){const hari=sekarang.toISOString().split('T')[0];hasil=hasil.filter(a=>a.tanggal===hari);}
-  else if(periode==='mingguan'){const awal=new Date(sekarang.setDate(sekarang.getDate()-sekarang.getDay())).toISOString().split('T')[0];hasil=hasil.filter(a=>a.tanggal>=awal);}
-  else if(periode==='bulanan'){const bln=sekarang.toISOString().slice(0,7);hasil=hasil.filter(a=>a.tanggal.startsWith(bln));}
-  const rekap={}, lokasiRekap={}, total=0;
-  hasil.forEach(a=>{
-    if(!rekap[a.nama])rekap[a.nama]={hadir:0,gajiPokok:0,potongan:0,gajiBersih:0};
-    rekap[a.nama].hadir++;rekap[a.nama].gajiPokok+=a.gajiPerHari;rekap[a.nama].potongan+=a.potongan;rekap[a.nama].gajiBersih+=a.gajiBersih;
-    if(!lokasiRekap[a.namaLokasi])lokasiRekap[a.namaLokasi]=0;lokasiRekap[a.namaLokasi]+=a.gajiBersih;
-    total+=a.gajiBersih;
-  });
-  const el=document.getElementById('isiLaporan');
-  if(!hasil.length){el.innerHTML='<p class="text-gray-400 text-center py-4">Belum ada data untuk periode ini</p>';return;}
-  el.innerHTML=`<div class="mb-4 p-3 bg-green-900/30 rounded-lg"><h4 class="font-bold text-green-400 mb-2">📊 Ringkasan — ${periode.charAt(0).toUpperCase()+periode.slice(1)}</h4><p><b>Total Pengeluaran:</b> Rp ${total.toLocaleString('id-ID')}</p></div>`+
-  `<div class="mb-4"><h4 class="font-bold text-sm mb-2">📍 Biaya per Lokasi</h4>`+
-  Object.entries(lokasiRekap).map(([l,n])=>`<p>${l}: Rp ${n.toLocaleString('id-ID')}</p>`).join('')+`</div>`+
-  `<table><tr><th>Nama Tukang</th><th>Hadir</th><th>Gaji Pokok</th><th>Potongan</th><th>Total Bersih</th></tr>`+
-  Object.values(rekap).map(r=>`<tr><td>${r.nama}</td><td>${r.hadir} hari</td><td>Rp ${r.gajiPokok.toLocaleString('id-ID')}</td><td>Rp ${r.potongan.toLocaleString('id-ID')}</td><td>Rp ${r.gajiBersih.toLocaleString('id-ID')}</td></tr>`).join('')+`</table>`;
+// ========== SIMPAN & BUAT BARCODE ==========
+function simpanDanBuatBarcode() {
+    const kode = document.getElementById('kodeBarcode').value.trim();
+    const nama = document.getElementById('namaTukang').value.trim();
+    const jabatan = document.getElementById('jabatanTukang').value;
+    const gaji = parseInt(document.getElementById('gajiPerHari').value) || 0;
+    const notif = document.getElementById('notifBuat');
+    
+    if (!kode || !nama) {
+        notif.className = 'notif error';
+        notif.textContent = '⚠️ Kode dan Nama Lengkap wajib diisi!';
+        notif.classList.remove('hidden');
+        return;
+    }
+    
+    if (daftarTukang.find(t => t.kode === kode)) {
+        notif.className = 'notif error';
+        notif.textContent = '⚠️ Kode Barcode sudah terpakai!';
+        notif.classList.remove('hidden');
+        return;
+    }
+    
+    const tukang = {
+        id: Date.now(),
+        kode, nama, jabatan, gajiPerHari: gaji,
+        tanggalDibuat: new Date().toLocaleDateString('id-ID')
+    };
+    
+    daftarTukang.push(tukang);
+    localStorage.setItem('lmj_barcode_tukang', JSON.stringify(daftarTukang));
+    
+    // Kirim ke Google Sheets
+    kirimKeSheet({
+        aksi: 'tambah_tukang',
+        kode, nama, jabatan, gajiPerHari: gaji
+    });
+    
+    // Tampilkan Barcode
+    document.getElementById('kotakHasilBarcode').classList.remove('hidden');
+    document.getElementById('teksKode').textContent = kode;
+    
+    setTimeout(() => {
+        JsBarcode('#hasilBarcode', kode, {
+            format: 'CODE128',
+            width: 2,
+            height: 60,
+            displayValue: true,
+            fontSize: 14
+        });
+    }, 100);
+    
+    notif.className = 'notif success';
+    notif.textContent = '✅ Data tersimpan!';
+    notif.classList.remove('hidden');
+    
+    // Kosongkan form
+    document.getElementById('kodeBarcode').value = '';
+    document.getElementById('namaTukang').value = '';
+    document.getElementById('gajiPerHari').value = '';
+    
+    setTimeout(() => notif.classList.add('hidden'), 3000);
 }
 
-// === EXPORT CSV ===
-function simpanCSV(){
-  const lokasi=document.getElementById('filterLokasiLaporan').value;const periode=document.getElementById('filterPeriode').value;
-  let hasil=dataAbsen;if(lokasi!=='semua')hasil=hasil.filter(a=>a.kodeLokasi===lokasi);
-  const sekarang=new Date();
-  if(periode==='harian')hasil=hasil.filter(a=>a.tanggal===sekarang.toISOString().split('T')[0]);
-  else if(periode==='mingguan'){const awal=new Date(sekarang.setDate(sekarang.getDate()-sekarang.getDay())).toISOString().split('T')[0];hasil=hasil.filter(a=>a.tanggal>=awal);}
-  else if(periode==='bulanan'){hasil=hasil.filter(a=>a.tanggal.startsWith(sekarang.toISOString().slice(0,7)));}
-  let csv='Jenis,Nama,Barcode,Lokasi,Tanggal,Jam,Status,GajiPerHari,Potongan,GajiBersih\n';
-  hasil.forEach(a=>csv+=`${periode.toUpperCase()},"${a.nama}","${a.kodeBarcode}","${a.namaLokasi}","${a.tanggal}","${a.jamMasuk}","${a.status}",${a.gajiPerHari},${a.potongan},${a.gajiBersih}\n`);
-  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');a.href=url;a.download=`Laporan_${periode}_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);
-  mainkanSuaraBerhasil();
+// ========== CETAK BARCODE ==========
+function cetakBarcode() {
+    window.print();
+}
+
+// ========== BUKA KAMERA SCAN ==========
+async function bukaKamera() {
+    document.getElementById('modalKamera').classList.remove('hidden');
+    kameraAktif = true;
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'environment', width: { ideal: 640 } }
+        });
+        const video = document.getElementById('videoKamera');
+        video.srcObject = stream;
+        await video.play();
+        
+        Quagga.init({
+            inputStream: {
+                type: 'LiveStream',
+                target: video,
+                constraints: { width: 640, height: 480 }
+            },
+            decoder: { readers: ['code_128_reader'] }
+        }, err => {
+            if (err) {
+                tutupKamera();
+                const kode = prompt('Kamera tidak tersedia.\nMasukkan kode secara manual:');
+                if (kode) prosesHasilScan(kode);
+                return;
+            }
+            Quagga.start();
+            Quagga.onDetected(data => {
+                Quagga.stop();
+                tutupKamera();
+                prosesHasilScan(data.codeResult.code);
+            });
+        });
+    } catch {
+        tutupKamera();
+        const kode = prompt('Tidak bisa akses kamera.\nMasukkan kode secara manual:');
+        if (kode) prosesHasilScan(kode);
+    }
+}
+
+function tutupKamera() {
+    kameraAktif = false;
+    const video = document.getElementById('videoKamera');
+    if (video.srcObject) video.srcObject.getTracks().forEach(t => t.stop());
+    try { Quagga.stop(); } catch(e) {}
+    document.getElementById('modalKamera').classList.add('hidden');
+}
+
+// ========== PROSES HASIL SCAN ==========
+function prosesHasilScan(kode) {
+    const tukang = daftarTukang.find(t => t.kode === kode);
+    if (!tukang) {
+        alert('❌ Barcode tidak terdaftar!');
+        return;
+    }
+    
+    const sekarang = new Date();
+    const tanggal = sekarang.toISOString().split('T')[0];
+    const jam = sekarang.toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+    const jamMasuk = sekarang.getHours();
+    const status = jamMasuk > 8 ? 'Terlambat' : 'Hadir';
+    
+    // Cek sudah absen hari ini
+    const sudah = riwayatAbsen.find(a => a.tanggal === tanggal && a.kode === kode);
+    if (sudah) {
+        alert(`⚠️ ${tukang.nama} sudah absen hari ini!\nJam Masuk: ${sudah.jamMasuk}`);
+        return;
+    }
+    
+    // Simpan absen
+    const absen = {
+        id: Date.now(),
+        kode: tukang.kode,
+        nama: tukang.nama,
+        jabatan: tukang.jabatan,
+        tanggal,
+        jamMasuk: jam,
+        status,
+        gajiPerHari: tukang.gajiPerHari
+    };
+    
+    riwayatAbsen.unshift(absen);
+    localStorage.setItem('lmj_barcode_absen', JSON.stringify(riwayatAbsen));
+    
+    // Kirim ke Sheet
+    kirimKeSheet({
+        aksi: 'absen_masuk',
+        kode: tukang.kode,
+        nama: tukang.nama,
+        jabatan: tukang.jabatan,
+        tanggal,
+        jamMasuk: jam,
+        status
+    });
+    
+    // Tampilkan hasil
+    document.getElementById('kotakHasilScan').classList.remove('hidden');
+    document.getElementById('scanNama').textContent = tukang.nama;
+    document.getElementById('scanJabatan').textContent = tukang.jabatan;
+    document.getElementById('scanJam').textContent = jam;
+    document.getElementById('scanStatus').textContent = status;
+    
+    alert(`✅ Absen Tercatat!\nNama: ${tukang.nama}\nJam: ${jam}\nStatus: ${status}`);
+}
+
+// ========== TAMPIL DAFTAR ==========
+function tampilDaftar(jenis) {
+    document.getElementById('isiDaftarTukang').classList.add('hidden');
+    document.getElementById('isiDaftarAbsen').classList.add('hidden');
+    document.getElementById('btnDaftarTukang').classList.remove('aktif');
+    document.getElementById('btnDaftarAbsen').classList.remove('aktif');
+    
+    if (jenis === 'tukang') {
+        document.getElementById('isiDaftarTukang').classList.remove('hidden');
+        document.getElementById('btnDaftarTukang').classList.add('aktif');
+        
+        if (daftarTukang.length === 0) {
+            document.getElementById('isiDaftarTukang').innerHTML = '<p class="text-gray-400 text-center py-4">Belum ada data tukang</p>';
+            return;
+        }
+        
+        document.getElementById('isiDaftarTukang').innerHTML = `
+            <table>
+                <tr><th>Kode</th><th>Nama</th><th>Jabatan</th><th></th></tr>
+                ${daftarTukang.map(t => `
+                <tr>
+                    <td class="text-xs">${t.kode}</td>
+                    <td>${t.nama}</td>
+                    <td class="text-xs">${t.jabatan}</td>
+                    <td><button onclick="hapusTukang(${t.id})" class="btn-hapus">🗑️</button></td>
+                </tr>`).join('')}
+            </table>`;
+    } else {
+        document.getElementById('isiDaftarAbsen').classList.remove('hidden');
+        document.getElementById('btnDaftarAbsen').classList.add('aktif');
+        
+        if (riwayatAbsen.length === 0) {
+            document.getElementById('isiDaftarAbsen').innerHTML = '<p class="text-gray-400 text-center py-4">Belum ada riwayat absen</p>';
+            return;
+        }
+        
+        document.getElementById('isiDaftarAbsen').innerHTML = `
+            <table>
+                <tr><th>Tanggal</th><th>Nama</th><th>Jam</th><th>Status</th></tr>
+                ${riwayatAbsen.map(a => `
+                <tr>
+                    <td class="text-xs">${a.tanggal}</td>
+                    <td>${a.nama}</td>
+                    <td class="text-xs">${a.jamMasuk}</td>
+                    <td class="${a.status==='Hadir'?'text-green-400':'text-yellow-400'}">${a.status}</td>
+                </tr>`).join('')}
+            </table>`;
+    }
+}
+
+function hapusTukang(id) {
+    if (!confirm('Hapus data tukang ini?')) return;
+    daftarTukang = daftarTukang.filter(t => t.id !== id);
+    localStorage.setItem('lmj_barcode_tukang', JSON.stringify(daftarTukang));
+    tampilDaftar('tukang');
+}
+
+// ========== SETELAN & GOOGLE SHEETS ==========
+function simpanUrl() {
+    urlWebApp = document.getElementById('urlWebApp').value.trim();
+    if (!urlWebApp) {
+        alert('⚠️ Masukkan URL Web App!');
+        return;
+    }
+    localStorage.setItem('lmj_url_sheet', urlWebApp);
+    document.getElementById('statusKoneksi').textContent = '✅ Terhubung ke Google Sheets';
+    document.getElementById('statusKoneksi').className = 'text-xs mt-2 text-green-400';
+    document.getElementById('pesanKoneksi').innerHTML = '<span class="text-green-400">✅ URL tersimpan!</span>';
+}
+
+async function kirimKeSheet(data) {
+    if (!urlWebApp) return false;
+    try {
+        const res = await fetch(urlWebApp, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+        const hasil = await res.json();
+        return hasil.hasil === 'berhasil';
+    } catch {
+        return false;
+    }
+}
+
+async function kirimSemuaKeSheet() {
+    if (!urlWebApp) {
+        alert('⚠️ Masukkan URL Web App dulu di tab Setelan!');
+        return;
+    }
+    let berhasil = 0;
+    for (const t of daftarTukang) {
+        await kirimKeSheet({aksi:'tambah_tukang', ...t});
+        berhasil++;
+    }
+    for (const a of riwayatAbsen) {
+        await kirimKeSheet({aksi:'absen_masuk', ...a});
+        berhasil++;
+    }
+    alert(`✅ ${berhasil} data dikirim ke Google Sheets!`);
+}
+
+// ========== UNDUH CSV ==========
+function unduhCSV() {
+    let teks = "Kode,Nama,Jabatan,GajiPerHari\n";
+    daftarTukang.forEach(t => {
+        teks += `"${t.kode}","${t.nama}","${t.jabatan}",${t.gajiPerHari}\n`;
+    });
+    teks += "\nTanggal,Nama,JamMasuk,Status\n";
+    riwayatAbsen.forEach(a => {
+        teks += `"${a.tanggal}","${a.nama}","${a.jamMasuk}","${a.status}"\n`;
+    });
+    
+    const blob = new Blob([teks], {type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Barcode_Absen_${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
 }
 </script>
 </body>
